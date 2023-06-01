@@ -47,6 +47,23 @@ type NodeRanker interface {
 	RankNodes(ctx context.Context, job model.Job, nodes []model.NodeInfo) ([]NodeRank, error)
 }
 
+// NodeSelector chooses appropriate nodes for to execute a job.
+type NodeSelector interface {
+	// SelectNodes returns the nodes that should be used to execute the passed job.
+	SelectNodes(context.Context, *model.Job) ([]model.NodeInfo, error)
+	// SelectNodesForRetry returns the nodes that should be used to retry the
+	// passed failed executions in the context of the passed job. If no nodes
+	// are returned, the executions do not need to be retried just yet.
+	SelectNodesForRetry(context.Context, *model.Job, *model.JobState) ([]model.NodeInfo, error)
+	// SelectBids returns the pending bids on the passed job that should be
+	// accepted or rejected.
+	SelectBids(context.Context, *model.Job, *model.JobState) (accept, reject []model.ExecutionState)
+	// CanCompleteJob returns whether the passed job is ready to be declared
+	// complete. The returned job state should be used to update the state of
+	// the job, and may be JobStateCompleted or JobStateCompletedPartially.
+	CanCompleteJob(context.Context, *model.Job, *model.JobState) (bool, model.JobStateType)
+}
+
 // NodeRank represents a node and its rank. The higher the rank, the more preferable a node is to execute the job.
 // A negative rank means the node is not suitable to execute the job.
 type NodeRank struct {
